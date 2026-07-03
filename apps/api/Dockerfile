@@ -15,6 +15,7 @@ RUN apk add --no-cache dumb-init
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/package.json ./
+COPY --from=builder /app/packages/shared ./packages/shared
 COPY apps/api/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENV NODE_ENV=production
