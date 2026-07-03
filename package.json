@@ -1,0 +1,23 @@
+{
+  "name": "eb-payments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EB Payments - global payment platform",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "db:migrate": "npm run migrate --workspace=@eb/api",
+    "db:seed": "npm run seed --workspace=@eb/api",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": { "node": ">=20.0.0" },
+  "packageManager": "npm@10.9.0"
+}
