@@ -20,7 +20,11 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    this.captcha.verify(dto.captchaId, dto.captchaAnswer);
+    await this.captcha.verifyRegistration({
+      captchaId: dto.captchaId,
+      captchaAnswer: dto.captchaAnswer,
+      recaptchaToken: dto.recaptchaToken,
+    });
 
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
@@ -43,7 +47,12 @@ export class AuthService {
     });
 
     await this.usersService.createDefaultWallets(user.id);
-    await this.verification.sendEmailCode(user.id, user.email);
+
+    try {
+      await this.verification.sendEmailCode(user.id, user.email);
+    } catch (err) {
+      console.error('[REGISTER] Email code not sent:', err);
+    }
 
     const token = this.signToken(user.id, user.email, user.role);
     return {

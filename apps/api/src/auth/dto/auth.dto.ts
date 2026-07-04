@@ -1,5 +1,5 @@
-import { IsEmail, IsString, MinLength, Length, IsNumber, IsBoolean } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, MinLength, Length, IsNumber, IsBoolean, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class RegisterDto {
@@ -25,14 +25,21 @@ export class RegisterDto {
   @Length(2, 2)
   countryCode: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  captchaId: string;
+  captchaId?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  captchaAnswer: number;
+  captchaAnswer?: number;
+
+  @ApiPropertyOptional({ description: 'Google reCAPTCHA token' })
+  @IsOptional()
+  @IsString()
+  recaptchaToken?: string;
 
   @ApiProperty()
   @IsBoolean()
