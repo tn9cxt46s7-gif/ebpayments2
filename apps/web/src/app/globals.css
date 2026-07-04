@@ -53,6 +53,19 @@ body {
   @apply rounded-xl px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500/50;
 }
 
+.eb-select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+[data-theme='dark'] .eb-select {
+  color-scheme: dark;
+}
+
+[data-theme='light'] .eb-select {
+  color-scheme: light;
+}
+
 .eb-select option {
   background-color: #1e293b;
   color: #f1f5f9;

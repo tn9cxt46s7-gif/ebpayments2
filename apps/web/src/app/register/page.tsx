@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { COUNTRIES } from '@eb/shared';
 import { api, setToken, setUser } from '@/lib/api';
 import { useApp } from '@/components/AppProvider';
 import { SettingsBar } from '@/components/SettingsBar';
@@ -13,7 +14,7 @@ interface Captcha { captchaId: string; question: string }
 export default function RegisterPage() {
   const router = useRouter();
   const { locale, t } = useApp();
-  const [countries, setCountries] = useState<Country[]>([]);
+  const [countries, setCountries] = useState<Country[]>(COUNTRIES);
   const [captcha, setCaptcha] = useState<Captcha | null>(null);
   const [gdpr, setGdpr] = useState(false);
   const [form, setForm] = useState({
@@ -29,7 +30,9 @@ export default function RegisterPage() {
   }
 
   useEffect(() => {
-    api<Country[]>('/banks/countries').then(setCountries).catch(() => {});
+    api<Country[]>('/banks/countries')
+      .then((list) => { if (list.length > 0) setCountries(list); })
+      .catch(() => {});
     loadCaptcha();
   }, []);
 

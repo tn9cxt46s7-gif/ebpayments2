@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { COUNTRIES } from '@eb/shared';
 import { DatabaseService } from '../database/database.service';
 import { getBanksForCountry } from '../data/banks';
-import { COUNTRIES } from '../data/countries';
 
 @Injectable()
 export class BanksService {
