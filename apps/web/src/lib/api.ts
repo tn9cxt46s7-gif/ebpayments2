@@ -1,5 +1,14 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
+function formatApiError(status: number, body: { message?: string | string[] }): string {
+  const msg = body.message;
+  if (Array.isArray(msg)) return msg.join(', ');
+  if (typeof msg === 'string' && msg) return msg;
+  if (status === 401) return 'Неверный email или пароль';
+  if (status === 429) return 'Слишком много запросов. Подождите минуту.';
+  return `Ошибка сервера (${status})`;
+}
+
 export async function api<T>(
   path: string,
   options: RequestInit & { token?: string } = {},
@@ -11,12 +20,27 @@ export async function api<T>(
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...fetchOptions, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, { ...fetchOptions, headers });
+  } catch {
+    const isLocal = API_URL.includes('localhost');
+    throw new Error(
+      isLocal
+        ? 'API недоступен. Запустите npm run dev и Docker (postgres).'
+        : 'API недоступен. Подождите 60 сек (Render просыпается) или проверьте NEXT_PUBLIC_API_URL на Vercel.',
+    );
+  }
+
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message ?? 'Ошибка сервера');
+    const err = await res.json().catch(() => ({}));
+    throw new Error(formatApiError(res.status, err));
   }
   return res.json();
+}
+
+export function getApiUrl(): string {
+  return API_URL;
 }
 
 export function getToken(): string | null {
