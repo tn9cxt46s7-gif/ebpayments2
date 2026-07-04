@@ -12,7 +12,8 @@
     "db:migrate": "npm run migrate --workspace=@eb/api",
     "db:seed": "npm run seed --workspace=@eb/api",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "build:vercel": "npm run build --workspace=@eb/web"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

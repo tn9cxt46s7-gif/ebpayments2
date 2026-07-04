@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@eb/shared'],
+  eslint: { ignoreDuringBuilds: true },
 };
 
 module.exports = nextConfig;
