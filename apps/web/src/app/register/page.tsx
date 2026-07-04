@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { COUNTRIES } from '@eb/shared';
+import { COUNTRIES, type Country } from '@/lib/countries';
 import { api, setToken, setUser } from '@/lib/api';
 import { useApp } from '@/components/AppProvider';
 import { SettingsBar } from '@/components/SettingsBar';
 
-interface Country { code: string; name: string }
 interface Captcha { captchaId: string; question: string }
 
 export default function RegisterPage() {
