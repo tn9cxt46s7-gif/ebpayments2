@@ -1,23 +1,14 @@
 'use client';
 
 import { useApp } from './AppProvider';
-import { LOCALES, Locale } from '@/i18n';
+import { LanguageFlagSelect } from './LanguageFlagSelect';
 
 export function SettingsBar() {
   const { theme, locale, setTheme, setLocale, t } = useApp();
 
   return (
     <div className="flex items-center gap-2">
-      <select
-        value={locale}
-        onChange={(e) => setLocale(e.target.value as Locale)}
-        className="eb-select text-xs py-1.5 px-2 rounded-lg"
-        aria-label="Язык"
-      >
-        {LOCALES.map((l) => (
-          <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
-        ))}
-      </select>
+      <LanguageFlagSelect value={locale} onChange={setLocale} />
       <button
         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         className="eb-btn-secondary text-xs py-1.5 px-3 rounded-lg"

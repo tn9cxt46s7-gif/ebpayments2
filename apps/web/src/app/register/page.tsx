@@ -8,13 +8,13 @@ import { api, setToken, setUser } from '@/lib/api';
 import { useApp } from '@/components/AppProvider';
 import { SettingsBar } from '@/components/SettingsBar';
 import { Recaptcha, isRecaptchaEnabled, type RecaptchaHandle } from '@/components/Recaptcha';
-import { LOCALES, type Locale } from '@/i18n';
+import { countryFlag } from '@/lib/country-flag';
 
 interface MathCaptcha { captchaId: string; question: string; useRecaptcha?: boolean }
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { locale, setLocale, t } = useApp();
+  const { locale, t } = useApp();
   const recaptchaRef = useRef<RecaptchaHandle>(null);
   const useGoogleCaptcha = isRecaptchaEnabled();
 
@@ -135,19 +135,10 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm text-muted mb-1">{t('country')}</label>
             <select value={form.countryCode} onChange={(e) => setForm({ ...form, countryCode: e.target.value })} className="eb-select py-2.5">
-              {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm text-muted mb-1">{t('language')}</label>
-            <select
-              value={locale}
-              onChange={(e) => setLocale(e.target.value as Locale)}
-              className="eb-select py-2.5"
-            >
-              {LOCALES.map((l) => (
-                <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {countryFlag(c.code)} {c.name}
+                </option>
               ))}
             </select>
           </div>
