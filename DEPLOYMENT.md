@@ -99,7 +99,7 @@ Swagger: `https://eb-payments-api.onrender.com/api/docs`
 
 - Сайт: `https://твой-проект.vercel.app`
 - Админ: `https://твой-проект.vercel.app/admin`
-- Логин: `admin@ebpayments.com` / `EbAdmin2026!`
+- Логин: тот, что задан через `ADMIN_EMAIL`/`ADMIN_PASSWORD` в переменных окружения Render (см. README и `.env.example`)
 
 После первого успешного деплоя **убери** `RUN_SEED=true` в Render (чтобы не перезаписывать данные).
 

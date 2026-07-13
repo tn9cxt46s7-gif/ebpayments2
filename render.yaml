@@ -1,1 +1,32 @@
-敳癲捩獥਺†‭祴数›敷੢††慮敭›扥瀭祡敭瑮⵳灡੩††畲瑮浩㩥搠捯敫ੲ††汰湡›牦敥 †爠来潩㩮映慲歮畦瑲 †搠捯敫晲汩健瑡㩨⸠愯灰⽳灡⽩潄正牥楦敬 †搠捯敫䍲湯整瑸›ਮ††敨污桴桃捥偫瑡㩨⼠灡⽩ㅶ栯慥瑬੨††湥噶牡㩳 ††ⴠ欠祥›低䕄䕟噎 †††瘠污敵›牰摯捵楴湯 ††ⴠ欠祥›啒彎䥍則呁佉华 †††瘠污敵›琢畲≥ ††ⴠ欠祥›佐呒 †††瘠污敵›㌢〰∱ ††ⴠ欠祥›坊彔䕓剃呅 †††朠湥牥瑡噥污敵›牴敵 ††ⴠ欠祥›䅄䅔䅂䕓啟䱒 †††猠湹㩣映污敳 ††ⴠ欠祥›佃卒佟䥒䥇੎††††祳据›慦獬੥†††‭敫㩹圠䉅啟䱒 †††猠湹㩣映污敳
+services:
+  - type: web
+    name: eb-payments-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: PORT
+        value: "3001"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: WEB_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PLATFORM_EMAIL
+        sync: false
+      - key: PLATFORM_PASSWORD
+        sync: false

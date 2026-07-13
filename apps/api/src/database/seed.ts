@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { MIGRATIONS } from './schema';
 import { getPoolConfig } from './db-config';
 
@@ -24,36 +25,43 @@ async function seed() {
   try {
     await pool.query(MIGRATIONS);
 
-    const adminHash = await bcrypt.hash('EbAdmin2026!', 10);
-    const platformHash = await bcrypt.hash('platform_internal', 10);
+    // Учётные данные админа берутся из окружения (ADMIN_EMAIL/ADMIN_PASSWORD).
+    // Если не заданы — генерируется случайный одноразовый пароль (виден только в этом выводе, нигде не сохраняется).
+    const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@ebpayments.com';
+    const adminPassword = process.env.ADMIN_PASSWORD ?? crypto.randomBytes(12).toString('base64url');
+    const adminHash = await bcrypt.hash(adminPassword, 10);
+
+    const platformEmail = process.env.PLATFORM_EMAIL ?? 'platform@ebpayments.com';
+    const platformPassword = process.env.PLATFORM_PASSWORD ?? crypto.randomBytes(12).toString('base64url');
+    const platformHash = await bcrypt.hash(platformPassword, 10);
 
     await pool.query(
       `INSERT INTO users (email, password_hash, first_name, last_name, role, kyc_status, country_code)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (email) DO UPDATE SET role = 'admin', password_hash = $2`,
-      ['admin@ebpayments.com', adminHash, 'Админ', 'EB Payments', 'admin', 'verified', 'RU'],
+      [adminEmail, adminHash, 'Админ', 'EB Payments', 'admin', 'verified', 'RU'],
     );
 
     await pool.query(
       `INSERT INTO users (email, password_hash, first_name, last_name, role, kyc_status, country_code)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (email) DO NOTHING`,
-      ['platform@ebpayments.com', platformHash, 'EB', 'Platform', 'admin', 'verified', 'US'],
+      [platformEmail, platformHash, 'EB', 'Platform', 'admin', 'verified', 'US'],
     );
 
     const adminWallets = ['USD', 'EUR', 'RUB', 'BTC', 'ETH', 'USDT'];
     for (const currency of adminWallets) {
       await pool.query(
         `INSERT INTO wallets (user_id, currency, balance)
-         SELECT id, $1, 0 FROM users WHERE email = 'admin@ebpayments.com'
+         SELECT id, $1, 0 FROM users WHERE email = $2
          ON CONFLICT (user_id, currency) DO NOTHING`,
-        [currency],
+        [currency, adminEmail],
       );
       await pool.query(
         `INSERT INTO wallets (user_id, currency)
-         SELECT id, $1 FROM users WHERE email = 'platform@ebpayments.com'
+         SELECT id, $1 FROM users WHERE email = $2
          ON CONFLICT (user_id, currency) DO NOTHING`,
-        [currency],
+        [currency, platformEmail],
       );
     }
 
@@ -67,8 +75,13 @@ async function seed() {
     }
 
     console.log('Готово.');
-    console.log('Админ-панель: admin@ebpayments.com / EbAdmin2026!');
-    console.log('(Только для владельца — не показывайте клиентам)');
+    if (!process.env.ADMIN_PASSWORD) {
+      console.log(`Сгенерирован временный пароль админа: ${adminEmail} / ${adminPassword}`);
+      console.log('Сохраните его в надёжном месте и задайте ADMIN_PASSWORD в .env, чтобы он не менялся при следующем seed.');
+    } else {
+      console.log(`Админ-панель: ${adminEmail} (пароль задан через ADMIN_PASSWORD)`);
+    }
+    console.log('(Только для владельца — не показывайте клиентам и не публикуйте в репозитории)');
   } catch (error) {
     console.error('Seed failed:', error);
     process.exit(1);
