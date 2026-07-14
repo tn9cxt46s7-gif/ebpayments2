@@ -5,8 +5,15 @@ import * as nodemailer from 'nodemailer';
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter | null = null;
+  private readonly brevoApiKey = process.env.BREVO_API_KEY;
 
   constructor() {
+    // Приоритет: Brevo HTTP API (работает на бесплатном Render — SMTP-порты там заблокированы)
+    if (this.brevoApiKey) {
+      this.logger.log('Используется Brevo API для отправки почты (HTTP, без блокировки SMTP-портов)');
+      return;
+    }
+
     const host = process.env.SMTP_HOST;
     if (host) {
       this.transporter = nodemailer.createTransport({
@@ -20,17 +27,20 @@ export class EmailService {
       });
       this.transporter.verify((err) => {
         if (err) {
-          this.logger.error(`SMTP не отвечает / неверные данные: ${err.message}`);
+          this.logger.error(
+            `SMTP не отвечает: ${err.message}. Если сервис на бесплатном тарифе Render — SMTP-порты (25/465/587) там заблокированы, используйте BREVO_API_KEY вместо SMTP_*.`,
+          );
         } else {
           this.logger.log('SMTP подключение проверено успешно — почта готова к отправке');
         }
       });
     } else {
-      this.logger.warn('SMTP_HOST не задан — письма будут только логироваться (dev-режим)');
+      this.logger.warn('Почта не настроена (нет BREVO_API_KEY и SMTP_HOST) — письма будут только логироваться (dev-режим)');
     }
   }
 
   isConfigured() {
+    if (this.brevoApiKey) return true;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
     if (!this.transporter || !user || !pass) return false;
@@ -40,6 +50,10 @@ export class EmailService {
 
   async send(to: string, subject: string, html: string) {
     const from = process.env.SMTP_FROM ?? 'EB Payments <receipts@ebpayments.com>';
+
+    if (this.brevoApiKey) {
+      return this.sendViaBrevoApi(to, subject, html, from);
+    }
 
     if (!this.transporter) {
       console.log(`[EMAIL DEV] To: ${to} | Subject: ${subject}`);
@@ -52,6 +66,43 @@ export class EmailService {
       return { sent: true };
     } catch (err) {
       this.logger.error(`Ошибка отправки письма на ${to}: ${(err as Error).message}`);
+      console.log(`[EMAIL FALLBACK] To: ${to} | Subject: ${subject}`);
+      console.log(html.replace(/<[^>]+>/g, '').slice(0, 200));
+      return { sent: false, dev: true, error: (err as Error).message };
+    }
+  }
+
+  private parseFrom(from: string): { name?: string; email: string } {
+    const match = from.match(/^(.*)<(.+)>$/);
+    if (match) return { name: match[1].trim().replace(/^"|"$/g, ''), email: match[2].trim() };
+    return { email: from.trim() };
+  }
+
+  private async sendViaBrevoApi(to: string, subject: string, html: string, from: string) {
+    const sender = this.parseFrom(from);
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': this.brevoApiKey!,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          sender,
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+        }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`Brevo API ${res.status}: ${errBody}`);
+      }
+      return { sent: true };
+    } catch (err) {
+      this.logger.error(`Ошибка отправки через Brevo API на ${to}: ${(err as Error).message}`);
       console.log(`[EMAIL FALLBACK] To: ${to} | Subject: ${subject}`);
       console.log(html.replace(/<[^>]+>/g, '').slice(0, 200));
       return { sent: false, dev: true, error: (err as Error).message };

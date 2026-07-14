@@ -30,3 +30,5 @@ services:
         sync: false
       - key: PLATFORM_PASSWORD
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
