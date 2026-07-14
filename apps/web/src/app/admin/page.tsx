@@ -41,7 +41,26 @@ export default function AdminPage() {
   const [transactions, setTransactions] = useState<Array<Record<string, unknown>>>([]);
   const [kycRequests, setKycRequests] = useState<KycRequest[]>([]);
   const [kycLoading, setKycLoading] = useState<string | null>(null);
+  const [docPreview, setDocPreview] = useState<{ dataUrl: string; mimeType: string; fileName: string } | null>(null);
+  const [docLoading, setDocLoading] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+
+  async function viewDocument(kycId: string) {
+    const token = getToken();
+    if (!token) return;
+    setDocLoading(kycId);
+    try {
+      const doc = await api<{ dataUrl: string; mimeType: string; fileName: string }>(
+        `/verification/admin/document/${kycId}`,
+        { token },
+      );
+      setDocPreview(doc);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Не удалось загрузить документ');
+    } finally {
+      setDocLoading(null);
+    }
+  }
 
   useEffect(() => {
     const token = getToken();
@@ -179,13 +198,17 @@ export default function AdminPage() {
         )}
 
         {tab === 'users' && (
-          <div className="glass rounded-2xl overflow-hidden">
+          <div className="glass rounded-2xl overflow-hidden overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-white/10">
                 <tr className="text-slate-400 text-left">
                   <th className="px-6 py-3">Email</th>
                   <th className="px-6 py-3">Имя</th>
+                  <th className="px-6 py-3">Телефон</th>
+                  <th className="px-6 py-3">Дата рождения</th>
                   <th className="px-6 py-3">Страна</th>
+                  <th className="px-6 py-3">Email ✓</th>
+                  <th className="px-6 py-3">Тел. ✓</th>
                   <th className="px-6 py-3">KYC</th>
                   <th className="px-6 py-3">Дата</th>
                 </tr>
@@ -195,7 +218,11 @@ export default function AdminPage() {
                   <tr key={u.id as string} className="hover:bg-white/5">
                     <td className="px-6 py-3">{u.email as string}</td>
                     <td className="px-6 py-3">{u.firstName as string} {u.lastName as string}</td>
+                    <td className="px-6 py-3">{(u.phone as string) || '—'}</td>
+                    <td className="px-6 py-3">{u.dateOfBirth ? new Date(u.dateOfBirth as string).toLocaleDateString('ru') : '—'}</td>
                     <td className="px-6 py-3">{u.countryCode as string}</td>
+                    <td className="px-6 py-3">{u.emailVerified ? '✅' : '—'}</td>
+                    <td className="px-6 py-3">{u.phoneVerified ? '✅' : '—'}</td>
                     <td className="px-6 py-3">
                       <span className={
                         u.kycStatus === 'verified' ? 'text-emerald-400' :
@@ -237,6 +264,13 @@ export default function AdminPage() {
                         <p><span className="text-slate-500">Файл:</span> {k.fileName}</p>
                         <p><span className="text-slate-500">Отправлено:</span> {new Date(k.uploadedAt).toLocaleString('ru')}</p>
                       </div>
+                      <button
+                        onClick={() => viewDocument(k.id)}
+                        disabled={docLoading === k.id}
+                        className="mt-3 text-sm px-4 py-2 rounded-xl border border-sky-500/40 text-sky-400 hover:bg-sky-500/10 disabled:opacity-50"
+                      >
+                        {docLoading === k.id ? 'Загрузка...' : '📄 Посмотреть документ'}
+                      </button>
                     </div>
                     <div className="flex gap-3 shrink-0">
                       <button
@@ -280,6 +314,27 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {docPreview && (
+        <div
+          className="fixed inset-0 z-[999] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setDocPreview(null)}
+        >
+          <div className="glass rounded-2xl p-4 max-w-2xl w-full max-h-[85vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-sm text-slate-300">{docPreview.fileName}</p>
+              <button onClick={() => setDocPreview(null)} className="text-slate-400 hover:text-white text-xl leading-none">✕</button>
+            </div>
+            {docPreview.mimeType === 'application/pdf' ? (
+              <a href={docPreview.dataUrl} target="_blank" rel="noreferrer" className="text-sky-400 underline text-sm">
+                Открыть PDF в новой вкладке
+              </a>
+            ) : (
+              <img src={docPreview.dataUrl} alt={docPreview.fileName} className="w-full rounded-xl" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

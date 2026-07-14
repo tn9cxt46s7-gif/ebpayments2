@@ -36,6 +36,12 @@ export class AdminController {
     return this.adminService.getUsers();
   }
 
+  @Get('users/:userId/documents')
+  @ApiOperation({ summary: 'Документы конкретного пользователя (все, включая проверенные/отклонённые)' })
+  userDocuments(@Param('userId') userId: string) {
+    return this.adminService.getUserDocuments(userId);
+  }
+
   @Get('transactions')
   @ApiOperation({ summary: 'Все транзакции' })
   transactions() {

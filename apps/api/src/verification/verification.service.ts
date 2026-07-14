@@ -1,12 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class VerificationService {
   constructor(
     private readonly db: DatabaseService,
     private readonly email: EmailService,
+    private readonly sms: SmsService,
   ) {}
 
   private generateCode() {
@@ -51,6 +53,10 @@ export class VerificationService {
   }
 
   async sendPhoneCode(userId: string, phone: string) {
+    if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+      throw new BadRequestException('Укажите телефон в международном формате, например +37120000000');
+    }
+
     const code = this.generateCode();
     const expires = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -61,11 +67,13 @@ export class VerificationService {
       [userId, phone, code, expires],
     );
 
-    console.log(`[SMS DEV] Phone: ${phone} Code: ${code}`);
+    const result = await this.sms.sendCode(phone, code);
     return {
       sent: true,
-      message: `SMS-код отправлен на ${phone}`,
-      devCode: code,
+      message: this.sms.isConfigured()
+        ? `SMS-код отправлен на ${phone}`
+        : `Код отправлен (режим разработки — SMS не настроен): ${code}`,
+      devCode: this.sms.isConfigured() ? undefined : code,
     };
   }
 
@@ -100,15 +108,15 @@ export class VerificationService {
 
   async submitKyc(
     userId: string,
-    data: { documentType: string; documentNumber: string; fileName: string },
+    data: { documentType: string; documentNumber: string; fileName: string; fileData: Buffer; mimeType: string; fileSize: number },
   ) {
     const crypto = await import('crypto');
     const hash = crypto.createHash('sha256').update(data.documentNumber).digest('hex');
 
     await this.db.query(
-      `INSERT INTO kyc_documents (user_id, document_type, file_name)
-       VALUES ($1, $2, $3)`,
-      [userId, data.documentType, data.fileName],
+      `INSERT INTO kyc_documents (user_id, document_type, file_name, file_data, mime_type, file_size)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, data.documentType, data.fileName, data.fileData, data.mimeType, data.fileSize],
     );
     await this.db.query(
       `UPDATE users SET document_type = $1, document_number_hash = $2,
@@ -119,6 +127,19 @@ export class VerificationService {
       submitted: true,
       message: 'Документы отправлены на проверку. Обычно это занимает до 24 часов.',
       nextStep: 'kyc_pending',
+    };
+  }
+
+  async getDocumentDataUrl(kycId: string) {
+    const row = await this.db.queryOne<{ file_data: Buffer; mime_type: string; file_name: string }>(
+      'SELECT file_data, mime_type, file_name FROM kyc_documents WHERE id = $1',
+      [kycId],
+    );
+    if (!row || !row.file_data) throw new BadRequestException('Документ не найден');
+    return {
+      fileName: row.file_name,
+      mimeType: row.mime_type,
+      dataUrl: `data:${row.mime_type};base64,${Buffer.from(row.file_data).toString('base64')}`,
     };
   }
 

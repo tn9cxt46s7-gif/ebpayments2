@@ -34,8 +34,9 @@ export async function api<T>(
   options: RequestInit & { token?: string } = {},
 ): Promise<T> {
   const { token, ...fetchOptions } = options;
+  const isFormData = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;

@@ -168,4 +168,9 @@ ALTER TABLE exchange_rates ALTER COLUMN from_currency TYPE VARCHAR(10);
 ALTER TABLE exchange_rates ALTER COLUMN to_currency TYPE VARCHAR(10);
 ALTER TABLE transactions ALTER COLUMN currency TYPE VARCHAR(10);
 ALTER TABLE merchant_payments ALTER COLUMN currency TYPE VARCHAR(10);
+
+-- Реальное хранение файла KYC-документа (бесплатно, прямо в БД; для больших объёмов позже можно перейти на S3/Cloudinary)
+ALTER TABLE kyc_documents ADD COLUMN IF NOT EXISTS file_data BYTEA;
+ALTER TABLE kyc_documents ADD COLUMN IF NOT EXISTS mime_type VARCHAR(100);
+ALTER TABLE kyc_documents ADD COLUMN IF NOT EXISTS file_size INTEGER;
 `;

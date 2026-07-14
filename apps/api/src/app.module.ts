@@ -16,6 +16,7 @@ import { StripeModule } from './stripe/stripe.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { PlatformModule } from './platform/platform.module';
 import { EmailModule } from './email/email.module';
+import { SmsModule } from './sms/sms.module';
 import { VerificationModule } from './verification/verification.module';
 import { SupportModule } from './support/support.module';
 import { DatabaseModule } from './database/database.module';
@@ -26,6 +27,7 @@ import { HealthController } from './health.controller';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     DatabaseModule,
     EmailModule,
+    SmsModule,
     CaptchaModule,
     PlatformModule,
     AuthModule,

@@ -25,6 +25,7 @@ export default function OnboardingPage() {
   const [dob, setDob] = useState('');
   const [docType, setDocType] = useState('passport');
   const [docNumber, setDocNumber] = useState('');
+  const [docFile, setDocFile] = useState<File | null>(null);
   const [message, setMessage] = useState('');
   const [devCode, setDevCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -153,12 +154,37 @@ export default function OnboardingPage() {
                   <option value="id_card">ID-карта (ЕС)</option>
                   <option value="drivers_license">Водительские права</option>
                 </select>
-                <input value={docNumber} onChange={(e) => setDocNumber(e.target.value)} placeholder="Номер документа" className="eb-input" />
-                <input type="file" accept="image/*,.pdf" className="eb-input text-sm" onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) setMessage(`Файл: ${f.name} (будет проверен)`);
+                <input
+                  value={docNumber}
+                  onChange={(e) => setDocNumber(e.target.value)}
+                  placeholder="Номер документа"
+                  className="eb-input"
+                  maxLength={30}
+                />
+                <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="eb-input text-sm" onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  if (f && f.size > 8 * 1024 * 1024) {
+                    setMessage('Файл слишком большой (максимум 8 МБ)');
+                    setDocFile(null);
+                    return;
+                  }
+                  setDocFile(f);
+                  if (f) setMessage(`Выбран файл: ${f.name}`);
                 }} />
-                <button disabled={loading || !docNumber} onClick={() => action(() => api('/verification/kyc', { method: 'POST', token: getToken()!, body: JSON.stringify({ documentType: docType, documentNumber: docNumber, fileName: 'document.jpg' }) }))} className="eb-btn-primary w-full py-3">Отправить на проверку</button>
+                <button
+                  disabled={loading || !docNumber || !docFile}
+                  onClick={() => action(async () => {
+                    const fd = new FormData();
+                    fd.append('documentType', docType);
+                    fd.append('documentNumber', docNumber);
+                    fd.append('file', docFile!);
+                    return api('/verification/kyc', { method: 'POST', token: getToken()!, body: fd });
+                  })}
+                  className="eb-btn-primary w-full py-3"
+                >
+                  Отправить на проверку
+                </button>
+                {!docFile && <p className="text-xs text-muted">Прикрепите фото или скан документа (JPG/PNG/PDF, до 8 МБ)</p>}
               </>
             )}
           </div>

@@ -30,7 +30,8 @@ export class AdminService {
 
   async getUsers() {
     const rows = await this.db.query(
-      `SELECT id, email, first_name, last_name, role, kyc_status, country_code, created_at
+      `SELECT id, email, first_name, last_name, role, kyc_status, country_code,
+              phone, phone_verified, email_verified, date_of_birth, created_at
        FROM users ORDER BY created_at DESC LIMIT 200`,
     );
     return rows.map((u: Record<string, unknown>) => ({
@@ -41,7 +42,29 @@ export class AdminService {
       role: u.role,
       kycStatus: u.kyc_status,
       countryCode: u.country_code,
+      phone: u.phone,
+      phoneVerified: u.phone_verified,
+      emailVerified: u.email_verified,
+      dateOfBirth: u.date_of_birth,
       createdAt: u.created_at,
+    }));
+  }
+
+  async getUserDocuments(userId: string) {
+    const rows = await this.db.query(
+      `SELECT id, document_type, file_name, mime_type, status, uploaded_at, reviewed_at, rejection_reason
+       FROM kyc_documents WHERE user_id = $1 ORDER BY uploaded_at DESC`,
+      [userId],
+    );
+    return rows.map((r: Record<string, unknown>) => ({
+      id: r.id,
+      documentType: r.document_type,
+      fileName: r.file_name,
+      mimeType: r.mime_type,
+      status: r.status,
+      uploadedAt: r.uploaded_at,
+      reviewedAt: r.reviewed_at,
+      rejectionReason: r.rejection_reason,
     }));
   }
 

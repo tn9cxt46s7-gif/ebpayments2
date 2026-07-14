@@ -54,7 +54,7 @@ export class EmailService {
         <p style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#111">${code}</p>
         <p style="color:#666;font-size:13px">Код действителен 10 минут. Не сообщайте его никому.</p>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
-        <p style="color:#999;font-size:11px">EB Payments · Лицензированная платёжная платформа ЕС</p>
+        <p style="color:#999;font-size:11px">EB Payments</p>
       </div>`;
     return this.send(email, subjects[locale] ?? subjects.ru, html);
   }
