@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
@@ -17,6 +18,15 @@ export class EmailService {
           pass: process.env.SMTP_PASS,
         },
       });
+      this.transporter.verify((err) => {
+        if (err) {
+          this.logger.error(`SMTP не отвечает / неверные данные: ${err.message}`);
+        } else {
+          this.logger.log('SMTP подключение проверено успешно — почта готова к отправке');
+        }
+      });
+    } else {
+      this.logger.warn('SMTP_HOST не задан — письма будут только логироваться (dev-режим)');
     }
   }
 
@@ -37,8 +47,15 @@ export class EmailService {
       return { sent: false, dev: true };
     }
 
-    await this.transporter.sendMail({ from, to, subject, html });
-    return { sent: true };
+    try {
+      await this.transporter.sendMail({ from, to, subject, html });
+      return { sent: true };
+    } catch (err) {
+      this.logger.error(`Ошибка отправки письма на ${to}: ${(err as Error).message}`);
+      console.log(`[EMAIL FALLBACK] To: ${to} | Subject: ${subject}`);
+      console.log(html.replace(/<[^>]+>/g, '').slice(0, 200));
+      return { sent: false, dev: true, error: (err as Error).message };
+    }
   }
 
   async sendVerificationCode(email: string, code: string, locale = 'ru') {
